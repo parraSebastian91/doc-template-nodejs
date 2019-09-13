@@ -4,7 +4,9 @@ var express = require("express");
 var app = express();
 var fs = require('fs');
 var path = require('path');
-app.get("/", async (req, res) => {
+const Excel = require('exceljs/modern.nodejs');
+
+app.get("/docx", async (req, res) => {
     try {
         const info = {
             //INFORME EJECUTIVO
@@ -56,15 +58,7 @@ app.get("/", async (req, res) => {
             resultado_detallado: [
                 {
                     objetivo_especifico: 'objetivo_especifico',
-                    hallazgos: {
-                        descripcion:'',
-                        hallazgo:[
-                            {detalle:'detalle1'},
-                            {detalle:'detalle2'},
-                            {detalle:'detalle3'},
-                            {detalle:'detalle4'}
-                        ]
-                    },
+                    hallazgo: 'hallazgo',
                     analisis_causa: 'analisis_causa',
                     impacto_efecto: 'impacto_efecto',
                     sugerencia: [
@@ -77,37 +71,12 @@ app.get("/", async (req, res) => {
                             descripcion: 'descripcion0'
                         }
                     ]
-                },
-                {
-                    objetivo_especifico: 'objetivo_especificoB',
-                    hallazgos: {
-                        descripcion:'',
-                        hallazgo:[
-                            {detalle:'detalle1B'},
-                            {detalle:'detalle2B'},
-                            {detalle:'detalle3B'},
-                            {detalle:'detalle4B'}
-                        ]
-                    },
-                    analisis_causa: 'analisis_causaB',
-                    impacto_efecto: 'impacto_efectoB',
-                    sugerencia: [
-                        {
-                            titulo: 'titulo0',
-                            descripcion: 'descripcion0'
-                        },
-                        {
-                            titulo: 'titulo1',
-                            descripcion: 'descripcion0'
-                        }
-                    ]
                 }
             ],
-            acciones_revia_informe:'acciones_revia_informe',
-            compromisos:'compromisos',
-            retroalimentacion:'retroalimentacion'
+            acciones_revia_informe: 'acciones_revia_informe',
+            compromisos: 'compromisos',
+            retroalimentacion: 'retroalimentacion'
         }
-
         let now = new Date();
         var content = fs.readFileSync(path.resolve(__dirname, 'doc-template/Informe.docx'), 'binary');
         var zip = new PizZip(content);
@@ -123,6 +92,50 @@ app.get("/", async (req, res) => {
         });
         res.end(fileContents);
 
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+app.get('/xlsx', async (req, res) => {
+    try {
+        var workbook = new Excel.Workbook();
+        workbook.addWorksheet('Hoja1');
+        workbook.addWorksheet('Resumen seguimiento');
+        var ws = workbook.getWorksheet('Hoja1');
+        ws.columns = [
+            { header: 'N° Auditoría', key: 'id', width: 16 },
+            { header: 'Fecha de Informe de Auditoría', key: 'fechaAuditoria', width: 16 },
+            { header: 'Actividad de Auditoría', key: 'actAuditoria', width: 16 },
+            { header: 'Hallazgo', key: 'DhallazgoB', width: 76 },
+            { header: 'Recomendación de Auditoría', key: 'recomendacion', width: 78 },
+            { header: 'Compromisos de los responsables del proceso, subproceso, etapa o materia auditada', key: 'compromiso', width: 52 },
+            { header: 'Indicador de Logro del Compromiso', key: 'logro', width: 43 },
+            { header: 'Plazo/Fecha Propuesta para Implementación de las medidas', key: 'plazo_propuesto', width: 16 },
+            { header: 'Responsable de la implementación', key: 'estado', width: 16 },
+            { header: 'Estado', key: 'estado', width: 15 },
+            { header: 'Medio de verificación ', key: 'medio_verificacion', width: 37 },
+            { header: 'Area', key: 'area', width: 15 },
+            { header: 'OBS Auditor a Cargo', key: 'auditor', width: 45 },
+        ];
+        ws.getRow(1).height = 50
+
+        // ws.getCell('B4').value = 3.14159;
+
+        var rowValues = [];
+        rowValues[1] = 4;
+        rowValues[5] = 'Kyle';
+        rowValues[9] = new Date();
+        ws.addRow(rowValues);
+
+        let fileName = 'testExel.xlsx';
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+        console.log(fileName)
+        workbook.xlsx.write(res)
+            .then(function () {
+                res.end();
+            });
     } catch (error) {
         console.log(error)
     }
